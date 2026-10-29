@@ -37,9 +37,7 @@ const BADGES_DEFINITIONS = [
         title: 'Langkah Pertama 🚀',
         desc: 'Melakukan setoran tabungan untuk pertama kali.',
         color: 'from-amber-500 to-orange-500',
-        check: () => {
-            return savingsData.some(s => s.history && s.history.some(tx => tx.type === 'deposit'));
-        }
+        check: () => savingsData.some(s => s.history && s.history.some(tx => tx.type === 'deposit'))
     },
     {
         id: 'badge_active_saver',
@@ -47,9 +45,7 @@ const BADGES_DEFINITIONS = [
         title: 'Master Celengan 🐷',
         desc: 'Memiliki minimal 3 celengan tabungan aktif.',
         color: 'from-pink-500 to-rose-500',
-        check: () => {
-            return savingsData.length >= 3;
-        }
+        check: () => savingsData.length >= 3
     },
     {
         id: 'badge_goal_reached',
@@ -57,9 +53,7 @@ const BADGES_DEFINITIONS = [
         title: 'Impian Terwujud 🎯',
         desc: 'Mencapai target 100% pada minimal 1 tabungan.',
         color: 'from-emerald-500 to-teal-500',
-        check: () => {
-            return savingsData.some(s => calculatePercentage(s) >= 100);
-        }
+        check: () => savingsData.some(s => calculatePercentage(s) >= 100)
     },
     {
         id: 'badge_consistent_depositer',
@@ -98,18 +92,18 @@ let currentSortOrder = 'asc';
 let currentTxType = 'deposit';
 let editingTxId = null;
 let selectedTxIdForModal = null;
-let savingsChartInstance = null; // Storing Chart.js Instance
+let savingsChartInstance = null;
 
 // USER MANAGEMENT STATE
 let currentUser = localStorage.getItem('tabungin_username') || '';
 let currentAuthMode = 'login';
 let deleteAccountTimer = null;
 
-// STATE KEAMANAN LOGIN (BRUTE FORCE LIMITING)
+// STATE KEAMANAN LOGIN
 let loginAttempts = parseInt(localStorage.getItem('tabungin_login_attempts') || '0');
 let lockUntil = parseInt(localStorage.getItem('tabungin_lock_until') || '0');
 
-// PREFERENSI TAMPILAN (FONT & WARNA TEMA)
+// PREFERENSI TAMPILAN
 let currentFont = localStorage.getItem('tabungin_font') || 'sans';
 let currentAccentColor = localStorage.getItem('tabungin_accent_color') || 'blue';
 
@@ -124,14 +118,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadStorage();
     initBrowserNotifications();
 
-    // Event listener untuk Kalkulator Simulasi Menabung
     const targetInput = document.getElementById('inputTargetAmount');
     if (targetInput) {
         targetInput.addEventListener('input', calculateSavingsTargetSimulation);
     }
 });
 
-// VALIDASI SESI KEAMANAN OTOMATIS & CEK PEMULIHAN AKUN (SOFT DELETE)
+// VALIDASI SESI KEAMANAN OTOMATIS
 async function validateUserSession() {
     if (!currentUser || !db) return true;
 
@@ -171,7 +164,6 @@ async function validateUserSession() {
                 }
             }
         }
-
         return true;
     } catch (err) {
         console.warn("Gagal memvalidasi sesi akun:", err);
@@ -197,10 +189,8 @@ function forceLogoutSystem() {
 // GAMIFIKASI & BADGES SYSTEM
 function evaluateBadges() {
     let unlockedCount = 0;
-
     BADGES_DEFINITIONS.forEach(b => {
-        const isUnlocked = b.check();
-        if (isUnlocked) unlockedCount++;
+        if (b.check()) unlockedCount++;
     });
 
     const indicator = document.getElementById('badgeCountIndicator');
@@ -230,7 +220,6 @@ function renderBadgesList() {
 
     container.innerHTML = BADGES_DEFINITIONS.map(b => {
         const isUnlocked = b.check();
-
         return `
             <div class="p-3.5 rounded-2xl border ${isUnlocked ? 'bg-gradient-to-br ' + b.color + ' text-white border-transparent shadow-lg' : 'bg-gray-50 dark:bg-[#14141c] border-gray-200 dark:border-gray-800 opacity-60'} flex flex-col justify-between text-center transition">
                 <div>
@@ -250,14 +239,12 @@ function renderBadgesList() {
     }).join('');
 }
 
-// HELPER PENGAMBILAN IP PUBLIK UNTUK PENCEGAHAN SPAM
 async function getPublicIP() {
     try {
         const response = await fetch('https://api.ipify.org?format=json');
         const data = await response.json();
         return data.ip;
     } catch (err) {
-        console.warn("Gagal mengambil IP Publik:", err);
         return "unknown_ip";
     }
 }
@@ -278,7 +265,6 @@ function openModalChangePassword() {
     if (document.getElementById('inputOldPassword')) document.getElementById('inputOldPassword').value = '';
     if (document.getElementById('inputNewPassword')) document.getElementById('inputNewPassword').value = '';
     document.getElementById('modalChangePassword')?.classList.remove('hidden');
-
     startDeleteAccountCooldown();
 }
 
@@ -293,7 +279,6 @@ function closeModalChangePassword() {
 function startDeleteAccountCooldown() {
     const btn = document.getElementById('btnDeleteAccount');
     if (!btn) return;
-
     if (deleteAccountTimer) clearInterval(deleteAccountTimer);
 
     let timeLeft = 20;
@@ -316,19 +301,11 @@ function startDeleteAccountCooldown() {
 }
 
 async function handleSoftDeleteAccount() {
-    if (!currentUser) {
-        showToast("Kamu belum login!");
-        return;
-    }
+    if (!currentUser) return showToast("Kamu belum login!");
 
-    if (!confirm("Konfirmasi Penghapusan Akun:\n\nApakah kamu yakin ingin menghapus akun ini? Akun akan disembunyikan dan dapat dipulihkan dalam kurun waktu 24 jam sebelum terhapus permanen.")) {
-        return;
-    }
+    if (!confirm("Konfirmasi Penghapusan Akun:\n\nApakah kamu yakin ingin menghapus akun ini? Akun akan disembunyikan dan dapat dipulihkan dalam kurun waktu 24 jam sebelum terhapus permanen.")) return;
 
-    if (!db) {
-        showToast("Koneksi database Firebase belum siap!");
-        return;
-    }
+    if (!db) return showToast("Koneksi database Firebase belum siap!");
 
     try {
         const docRef = db.collection(COLLECTION_NAME).doc(currentUser);
@@ -337,21 +314,16 @@ async function handleSoftDeleteAccount() {
             deletedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        showToast("Akun telah ditandai untuk dihapus. Kamu memiliki 24 jam untuk memulihkannya.");
+        showToast("Akun telah ditandai untuk dihapus (pemulihan 24 jam).");
         forceLogoutSystem();
     } catch (err) {
-        console.error("Gagal menghapus akun:", err);
         showToast("Gagal memproses penghapusan akun!");
     }
 }
 
 async function handleChangePasswordSubmit(e) {
     if (e) e.preventDefault();
-
-    if (!currentUser) {
-        showToast("Kamu belum login!");
-        return;
-    }
+    if (!currentUser) return showToast("Kamu belum login!");
 
     const isValid = await validateUserSession();
     if (!isValid) return;
@@ -359,20 +331,9 @@ async function handleChangePasswordSubmit(e) {
     const oldPassword = document.getElementById('inputOldPassword')?.value || "";
     const newPassword = document.getElementById('inputNewPassword')?.value || "";
 
-    if (!oldPassword) {
-        showToast("Masukkan kata sandi lama!");
-        return;
-    }
-
-    if (!newPassword || newPassword.length < 4) {
-        showToast("Kata sandi baru minimal 4 karakter!");
-        return;
-    }
-
-    if (!db) {
-        showToast("Koneksi database Firebase belum siap!");
-        return;
-    }
+    if (!oldPassword) return showToast("Masukkan kata sandi lama!");
+    if (!newPassword || newPassword.length < 4) return showToast("Kata sandi baru minimal 4 karakter!");
+    if (!db) return showToast("Koneksi database Firebase belum siap!");
 
     try {
         const docRef = db.collection(COLLECTION_NAME).doc(currentUser);
@@ -386,8 +347,7 @@ async function handleChangePasswordSubmit(e) {
 
         const userData = docSnap.data();
         if (userData.password && userData.password !== oldPassword) {
-            showToast("Kata sandi lama salah!");
-            return;
+            return showToast("Kata sandi lama salah!");
         }
 
         await docRef.update({
@@ -398,7 +358,6 @@ async function handleChangePasswordSubmit(e) {
         showToast("Kata sandi berhasil diperbarui! 🔑");
         closeModalChangePassword();
     } catch (err) {
-        console.error("Gagal mengganti kata sandi:", err);
         showToast("Gagal memperbarui kata sandi!");
     }
 }
@@ -445,33 +404,20 @@ function togglePasswordVisibility() {
 
 async function handleAuthSubmit(e) {
     if (e) e.preventDefault();
-
     const now = Date.now();
 
     if (currentAuthMode === 'login' && lockUntil > now) {
         const remainingSeconds = Math.ceil((lockUntil - now) / 1000);
-        showToast(`Akses terkunci! Silakan tunggu ${remainingSeconds} detik lagi.`);
-        return;
+        return showToast(`Akses terkunci! Tunggu ${remainingSeconds} detik lagi.`);
     }
 
     const rawInput = document.getElementById('inputAuthUsername')?.value || "";
     const password = document.getElementById('inputAuthPassword')?.value || "";
     const username = rawInput.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
 
-    if (!username || username.length < 3) {
-        showToast("Username minimal 3 karakter!");
-        return;
-    }
-
-    if (!password || password.length < 4) {
-        showToast("Kata sandi minimal 4 karakter!");
-        return;
-    }
-
-    if (!db) {
-        showToast("Koneksi database Firebase belum siap!");
-        return;
-    }
+    if (!username || username.length < 3) return showToast("Username minimal 3 karakter!");
+    if (!password || password.length < 4) return showToast("Kata sandi minimal 4 karakter!");
+    if (!db) return showToast("Koneksi database Firebase belum siap!");
 
     try {
         const docRef = db.collection(COLLECTION_NAME).doc(username);
@@ -489,19 +435,14 @@ async function handleAuthSubmit(e) {
                     const lastRegisterTime = ipSnap.data().lastRegisterAt?.toMillis() || 0;
                     if (now - lastRegisterTime < twelveHoursInMs) {
                         const remainingHours = Math.ceil((twelveHoursInMs - (now - lastRegisterTime)) / (1000 * 60 * 60));
-                        showToast(`IP ini baru saja mendaftar. Silakan coba lagi dalam ${remainingHours} jam!`);
-                        return;
+                        return showToast(`IP ini baru saja mendaftar. Coba lagi dalam ${remainingHours} jam!`);
                     }
                 }
             }
 
-            if (docSnap.exists) {
-                showToast("Username sudah dipakai, pilih username lain!");
-                return;
-            }
+            if (docSnap.exists) return showToast("Username sudah dipakai!");
 
             savingsData = [];
-
             await docRef.set({
                 username: username,
                 password: password,
@@ -519,17 +460,13 @@ async function handleAuthSubmit(e) {
 
             currentUser = username;
             localStorage.setItem('tabungin_username', currentUser);
-
             loginAttempts = 0;
             localStorage.setItem('tabungin_login_attempts', '0');
             localStorage.removeItem('tabungin_lock_until');
 
-            showToast(`Akun @${username} berhasil dibuat & langsung masuk! 🎉`);
+            showToast(`Akun @${username} berhasil dibuat & otomatis masuk! 🎉`);
         } else {
-            if (!docSnap.exists) {
-                showToast("Username tidak ditemukan! Silakan klik 'Daftar Baru'");
-                return;
-            }
+            if (!docSnap.exists) return showToast("Username tidak ditemukan!");
 
             const userData = docSnap.data();
             if (userData.password && userData.password !== password) {
@@ -541,7 +478,7 @@ async function handleAuthSubmit(e) {
                     localStorage.setItem('tabungin_lock_until', lockUntil);
                     loginAttempts = 0;
                     localStorage.setItem('tabungin_login_attempts', '0');
-                    showToast("Gagal login 5x! Akses login dikunci selama 1 menit.");
+                    showToast("Gagal login 5x! Akses terkunci 1 menit.");
                 } else {
                     showToast(`Kata sandi salah! Sisa percobaan: ${5 - loginAttempts}`);
                 }
@@ -563,16 +500,11 @@ async function handleAuthSubmit(e) {
         }
 
         closeModalUsername();
-
-        if (document.getElementById('inputAuthPassword')) {
-            document.getElementById('inputAuthPassword').value = '';
-        }
-
+        if (document.getElementById('inputAuthPassword')) document.getElementById('inputAuthPassword').value = '';
         saveStorage();
         updateUserUI();
         renderHome();
     } catch (err) {
-        console.error("Gagal autentikasi:", err);
         showToast("Gagal terhubung ke server database!");
     }
 }
@@ -605,7 +537,7 @@ function updateUserUI() {
     }
 }
 
-// STORAGE MANAGEMENT DENGAN PROTEKSI AKUN HANTU
+// STORAGE MANAGEMENT
 async function loadStorage() {
     if (currentUser && db) {
         try {
@@ -621,12 +553,12 @@ async function loadStorage() {
                 evaluateBadges();
                 return;
             } else {
-                showToast("Sesi berakhir, akun tidak ditemukan di database.");
+                showToast("Sesi berakhir, akun tidak ditemukan.");
                 forceLogoutSystem();
                 return;
             }
         } catch (err) {
-            console.error("Gagal memuat data dari Firebase:", err);
+            console.error("Gagal memuat dari Firebase:", err);
         }
     }
 
@@ -636,11 +568,8 @@ async function loadStorage() {
         if (stored) {
             savingsData = JSON.parse(stored);
         } else {
-            if (!currentUser) {
-                seedSampleData(false);
-            } else {
-                savingsData = [];
-            }
+            if (!currentUser) seedSampleData(false);
+            else savingsData = [];
         }
     } catch (err) {
         savingsData = [];
@@ -655,18 +584,14 @@ function saveStorage() {
 
     try {
         localStorage.setItem(localKey, JSON.stringify(savingsData));
-    } catch (err) {
-        console.error("Gagal menyimpan ke memori lokal", err);
-    }
+    } catch (err) {}
 
     if (currentUser && db) {
         db.collection(COLLECTION_NAME).doc(currentUser).set({
             username: currentUser,
             items: savingsData,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true }).catch(err => {
-            console.error("Gagal menyinkronkan ke cloud:", err);
-        });
+        }, { merge: true }).catch(() => {});
     }
 
     evaluateBadges();
@@ -674,7 +599,7 @@ function saveStorage() {
 
 function confirmResetSampleData() {
     document.getElementById('topMenu')?.classList.add('hidden');
-    if (confirm("Apakah kamu yakin ingin mereset dan memuat data contoh? Data tabungan saat ini akan diganti.")) {
+    if (confirm("Apakah kamu yakin ingin mereset dan memuat data contoh?")) {
         seedSampleData(true);
     }
 }
@@ -710,7 +635,7 @@ function seedSampleData(notify = true) {
 
 function confirmClearAllData() {
     document.getElementById('topMenu')?.classList.add('hidden');
-    if (confirm("PERINGATAN: Apakah kamu yakin ingin menghapus SEMUA data tabungan? Tindakan ini tidak dapat dibatalkan!")) {
+    if (confirm("PERINGATAN: Yakin hapus SEMUA data tabungan?")) {
         clearAllData();
     }
 }
@@ -723,7 +648,7 @@ function clearAllData() {
     showToast("Semua data berhasil dihapus");
 }
 
-// REAL-TIME FORMATTING & PARSING HELPERS
+// HELPERS
 function parseNominal(val) {
     if (typeof val === 'number') return val;
     if (!val) return 0;
@@ -738,8 +663,7 @@ function formatDots(num) {
 }
 
 function formatCurrency(amount, symbol = 'Rp') {
-    const formatted = formatDots(amount);
-    return `${symbol} ${formatted}`;
+    return `${symbol} ${formatDots(amount)}`;
 }
 
 function handleFormattedInput(inputElement) {
@@ -754,7 +678,6 @@ function handleFormattedInput(inputElement) {
     }
 
     inputElement.value = formatDots(numericValue);
-
     const newLength = inputElement.value.length;
     const diff = newLength - originalLength;
     inputElement.setSelectionRange(cursorPosition + diff, cursorPosition + diff);
@@ -791,8 +714,7 @@ function calculateTerkumpul(item) {
 function calculatePercentage(item) {
     if (!item || !item.targetAmount || item.targetAmount <= 0) return 0;
     const terkumpul = calculateTerkumpul(item);
-    const pct = Math.round((terkumpul / item.targetAmount) * 100);
-    return Math.max(0, pct);
+    return Math.max(0, Math.round((terkumpul / item.targetAmount) * 100));
 }
 
 function calculateEstimasiText(item) {
@@ -806,7 +728,6 @@ function calculateEstimasiText(item) {
     return `${sisaPeriode} ${unit} Lagi`;
 }
 
-// KALKULATOR SIMULASI TARGET MENABUNG
 function calculateSavingsTargetSimulation() {
     const targetAmount = parseNominal(document.getElementById('inputTargetAmount')?.value);
     const deadlineVal = document.getElementById('inputTargetDeadline')?.value;
@@ -851,9 +772,7 @@ function calculateSavingsTargetSimulation() {
     }
 
     const freqInput = document.getElementById('inputFreqAmount');
-    if (freqInput) {
-        freqInput.value = formatDots(requiredAmount);
-    }
+    if (freqInput) freqInput.value = formatDots(requiredAmount);
 
     infoBox.classList.remove('hidden');
     infoBox.innerHTML = `
@@ -864,17 +783,13 @@ function calculateSavingsTargetSimulation() {
     `;
 }
 
-// EKSPOR PDF DOKUMEN REKAP TABUNGAN
 function exportToPDF() {
     if (!currentDetailId) return;
     const item = savingsData.find(s => s.id === currentDetailId);
     if (!item) return;
 
     const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-        showToast("Mohon izinkan Pop-up di peramban kamu!");
-        return;
-    }
+    if (!printWindow) return showToast("Mohon izinkan Pop-up di browser!");
 
     const terkumpul = calculateTerkumpul(item);
     const kekurang = Math.max(0, item.targetAmount - terkumpul);
@@ -911,71 +826,33 @@ function exportToPDF() {
                 body { font-family: 'Poppins', sans-serif; padding: 30px; color: #1e293b; background: #fff; margin: 0; }
                 .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #3b82f6; padding-bottom: 15px; margin-bottom: 25px; }
                 .logo-text { font-size: 22px; font-weight: 800; color: #0f172a; margin: 0; }
-                .logo-sub { font-size: 12px; color: #64748b; margin-top: 2px; }
-                .doc-info { text-align: right; font-size: 11px; color: #64748b; }
                 .card-title { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
-                .card-title h2 { margin: 0 0 6px 0; font-size: 18px; color: #0f172a; }
-                .card-title p { margin: 0; font-size: 12px; color: #64748b; }
                 .grid-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 25px; }
                 .stat-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; text-align: center; }
-                .stat-label { font-size: 10px; font-weight: 600; text-transform: uppercase; color: #64748b; margin-bottom: 4px; }
-                .stat-value { font-size: 16px; font-weight: 800; color: #0f172a; }
                 table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
-                th { background: #f1f5f9; color: #475569; font-weight: 600; padding: 10px 8px; text-align: left; border-bottom: 2px solid #cbd5e1; }
-                .footer { margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 15px; text-align: center; font-size: 11px; color: #94a3b8; }
+                th { background: #f1f5f9; color: #475569; padding: 10px 8px; text-align: left; border-bottom: 2px solid #cbd5e1; }
             </style>
         </head>
         <body>
             <div class="header">
                 <div>
                     <h1 class="logo-text">TABUNGin</h1>
-                    <p class="logo-sub">Laporan Rekap Catatan Tabungan</p>
-                </div>
-                <div class="doc-info">
-                    <p><strong>Dicetak Pada:</strong> ${formatDateNow()}</p>
-                    <p><strong>Pengguna:</strong> @${currentUser || 'Guest'}</p>
+                    <p style="font-size: 12px; color: #64748b;">Laporan Rekap Catatan Tabungan</p>
                 </div>
             </div>
-
             <div class="card-title">
-                <h2>Target Impian: ${escapeHtml(item.title)}</h2>
-                <p>Status Capaian: <strong>${pct}% Tercapai</strong> • Rencana Rutin: ${formatCurrency(item.freqAmount, symbol)} / ${item.freqType || 'Minggu'}</p>
+                <h2 style="margin:0;">Target Impian: ${escapeHtml(item.title)}</h2>
+                <p style="margin:4px 0 0 0; font-size:12px; color:#64748b;">Status: <strong>${pct}% Tercapai</strong></p>
             </div>
-
             <div class="grid-summary">
-                <div class="stat-box">
-                    <div class="stat-label">Target Tabungan</div>
-                    <div class="stat-value">${formatCurrency(item.targetAmount, symbol)}</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-label" style="color: #059669;">Total Terkumpul</div>
-                    <div class="stat-value" style="color: #059669;">${formatCurrency(terkumpul, symbol)}</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-label" style="color: #e11d48;">Sisa Kekurangan</div>
-                    <div class="stat-value" style="color: #e11d48;">${formatCurrency(kekurang, symbol)}</div>
-                </div>
+                <div class="stat-box"><div>Target Tabungan</div><div style="font-weight:bold;">${formatCurrency(item.targetAmount, symbol)}</div></div>
+                <div class="stat-box"><div style="color:#059669;">Total Terkumpul</div><div style="font-weight:bold; color:#059669;">${formatCurrency(terkumpul, symbol)}</div></div>
+                <div class="stat-box"><div style="color:#e11d48;">Sisa Kekurangan</div><div style="font-weight:bold; color:#e11d48;">${formatCurrency(kekurang, symbol)}</div></div>
             </div>
-
-            <h3 style="font-size: 14px; margin-bottom: 10px; color: #334155;">Riwayat Transaksi</h3>
             <table>
-                <thead>
-                    <tr>
-                        <th style="width: 40px; text-align: center;">#</th>
-                        <th style="width: 150px;">Tanggal</th>
-                        <th style="width: 110px;">Jenis</th>
-                        <th>Keterangan Catatan</th>
-                        <th style="text-align: right; width: 140px;">Nominal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${historyRows || '<tr><td colspan="5" style="text-align:center; padding: 20px; color:#94a3b8;">Belum ada riwayat transaksi.</td></tr>'}
-                </tbody>
+                <thead><tr><th>#</th><th>Tanggal</th><th>Jenis</th><th>Keterangan</th><th style="text-align:right;">Nominal</th></tr></thead>
+                <tbody>${historyRows || '<tr><td colspan="5" style="text-align:center; padding:20px;">Belum ada riwayat.</td></tr>'}</tbody>
             </table>
-
-            <div class="footer">
-                <p>Dokumen ini dicetak secara otomatis dari aplikasi TABUNGin sebagai rekap tabungan yang sah.</p>
-            </div>
         </body>
         </html>
     `);
@@ -986,8 +863,6 @@ function exportToPDF() {
         printWindow.print();
         printWindow.close();
     }, 300);
-
-    showToast("Membuka dokumen PDF...");
 }
 
 // VIEW ROUTING
@@ -1013,7 +888,6 @@ function showView(viewName) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// HOME PAGE RENDERING
 function setActiveTab(tab) {
     activeTab = tab;
     const tabB = document.getElementById('tab-berlangsung');
@@ -1116,12 +990,10 @@ function renderHome() {
             <div onclick="openDetailView('${item.id}')" class="bg-white dark:bg-[#181820] border border-gray-200 dark:border-gray-800/80 hover:border-gray-300 dark:hover:border-gray-700 rounded-3xl p-5 shadow-xl cursor-pointer transition transform hover:-translate-y-1 active:scale-[0.99] flex flex-col justify-between space-y-4">
                 <div>
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white tracking-wide truncate mb-3">${escapeHtml(item.title)}</h3>
-
                     <div class="w-full h-48 rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#22222e] flex items-center justify-center">
                         <img src="${img}" alt="${escapeHtml(item.title)}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://placehold.co/600x400/22222a/94a3b8?text=Impian+Kamu';">
                     </div>
                 </div>
-
                 <div>
                     <div class="flex items-center justify-between">
                         <div>
@@ -1136,7 +1008,6 @@ function renderHome() {
                             <span class="absolute text-[11px] font-bold text-gray-900 dark:text-white">${pct}%</span>
                         </div>
                     </div>
-
                     <div class="border-t border-gray-100 dark:border-gray-800/80 mt-4 pt-3 flex items-center justify-between text-xs">
                         <span class="text-gray-500 dark:text-gray-400 font-medium">Sisa Estimasi</span>
                         <span class="font-semibold text-theme-accent">${estimasiText}</span>
@@ -1151,7 +1022,7 @@ function renderHome() {
     }
 }
 
-// DETAIL PAGE RENDERING & GRAFIK TREN
+// DETAIL PAGE RENDERING & PERBAIKAN GRAFIK TREN
 function openDetailView(id) {
     currentDetailId = id;
     const item = savingsData.find(s => s.id === id);
@@ -1195,8 +1066,6 @@ function openDetailView(id) {
     if (reminderToggle) reminderToggle.checked = item.reminderEnabled !== false;
 
     renderDetailHistory(item);
-
-    // RENDER GRAFIK TREN TABUNGAN & INDIKATOR STATUS
     renderSavingsTrendChart(item);
 
     showView('detail');
@@ -1206,7 +1075,7 @@ function openDetailView(id) {
     }
 }
 
-// FITUR BARU: RENDERING CHART.JS & INDIKATOR "ON TRACK" VS "TERBELAKANG"
+// LOGIKA FIX: AKURASI GRAFIK TREN & STATUS ON TRACK
 function renderSavingsTrendChart(item) {
     const canvasElem = document.getElementById('savingsTrendChart');
     const badgeElem = document.getElementById('trendStatusBadge');
@@ -1240,25 +1109,33 @@ function renderSavingsTrendChart(item) {
         });
     }
 
-    // ANALISIS STATUS ON TRACK VS TERBELAKANG
+    // ANALISIS STATUS ON TRACK / DI BAWAH TARGET (DENGAN REVISI HITUNGAN)
     const terkumpul = calculateTerkumpul(item);
     const target = item.targetAmount || 1;
+    const actualPercentage = (terkumpul / target) * 100;
     let isOnTrack = false;
 
     if (item.targetDeadline) {
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
         const deadlineDate = new Date(item.targetDeadline);
-        const createdDate = item.createdDate ? new Date(item.createdDate) : new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+        deadlineDate.setHours(0, 0, 0, 0);
 
-        const totalDuration = Math.max(1, deadlineDate - createdDate);
-        const elapsedDuration = Math.max(0, today - createdDate);
+        const createdDate = item.createdDate ? new Date(item.createdDate) : new Date(today);
+        createdDate.setHours(0, 0, 0, 0);
+
+        const totalDuration = Math.max(1, (deadlineDate - createdDate) / (1000 * 60 * 60 * 24));
+        const elapsedDuration = Math.max(1, (today - createdDate) / (1000 * 60 * 60 * 24));
         const expectedPercentage = Math.min(100, (elapsedDuration / totalDuration) * 100);
-        const actualPercentage = (terkumpul / target) * 100;
 
-        isOnTrack = actualPercentage >= expectedPercentage || actualPercentage >= 100;
+        if (elapsedDuration <= 1) {
+            isOnTrack = actualPercentage > 0;
+        } else {
+            isOnTrack = actualPercentage >= expectedPercentage;
+        }
     } else {
-        const pct = calculatePercentage(item);
-        isOnTrack = pct >= 30 || history.length >= 2;
+        isOnTrack = actualPercentage > 0;
     }
 
     if (badgeElem) {
@@ -1267,7 +1144,7 @@ function renderSavingsTrendChart(item) {
             badgeElem.innerHTML = `<i class="fa-solid fa-circle-check text-[9px]"></i> On Track`;
         } else {
             badgeElem.className = "text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-rose-500/15 text-rose-500 border border-rose-500/30 flex items-center gap-1";
-            badgeElem.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-[9px]"></i> Terbelakang`;
+            badgeElem.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-[9px]"></i> Di Bawah Target`;
         }
     }
 
@@ -1360,7 +1237,6 @@ function renderDetailHistory(item) {
     }).join('');
 }
 
-// LIVE PREVIEW & AUTOMATIC COMPRESSION
 function updateLivePreview(url) {
     const previewImg = document.getElementById('modalImgPreview');
     const placeholder = document.getElementById('modalImgPlaceholder');
@@ -1382,8 +1258,7 @@ function handleFileSelect(e) {
     const file = e.target.files[0];
     if (!file) return;
 
-    const MAX_FILE_SIZE = 1 * 1024 * 1024;
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > 1 * 1024 * 1024) {
         showToast("Ukuran foto terlalu besar! Maksimal 1 MB.");
         e.target.value = "";
         return;
@@ -1417,7 +1292,6 @@ function handleFileSelect(e) {
             ctx.drawImage(img, 0, 0, width, height);
 
             const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-
             const inputImg = document.getElementById('inputImage');
             if (inputImg) inputImg.value = compressedBase64;
             updateLivePreview(compressedBase64);
@@ -1525,7 +1399,6 @@ function openModalEditSavings() {
     updateLivePreview(item.imageUrl || "");
 
     calculateSavingsTargetSimulation();
-
     document.getElementById('modalSavings')?.classList.remove('hidden');
 }
 
@@ -1535,7 +1408,6 @@ function closeModalSavings() {
 
 async function handleSaveSavings(e) {
     if (e) e.preventDefault();
-
     const isValid = await validateUserSession();
     if (!isValid) return;
 
@@ -1670,10 +1542,7 @@ async function handleSaveTransaction(e) {
     const amount = parseNominal(document.getElementById('inputTxAmount')?.value);
     const note = (document.getElementById('inputTxNote')?.value || "").trim();
 
-    if (!amount || amount <= 0) {
-        showToast("Nominal tabungan harus lebih dari 0!");
-        return;
-    }
+    if (!amount || amount <= 0) return showToast("Nominal tabungan harus lebih dari 0!");
 
     if (!item.history) item.history = [];
 
@@ -1809,7 +1678,7 @@ async function handleDeleteTxFromModal() {
     selectedTxIdForModal = null;
 }
 
-// BROWSER NOTIFICATIONS HANDLER
+// BROWSER NOTIFICATIONS
 function initBrowserNotifications() {
     if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
         Notification.requestPermission();
@@ -1887,7 +1756,6 @@ function toggleReminderState(enabled) {
     showToast(enabled ? "Pengingat diaktifkan ⏰" : "Pengingat dinonaktifkan");
 }
 
-// DELETE CELENGAN
 function confirmDeleteSavings() {
     document.getElementById('modalConfirmDelete')?.classList.remove('hidden');
 }
@@ -1909,7 +1777,6 @@ async function executeDeleteSavings() {
     showToast("Celengan berhasil dihapus");
 }
 
-// TOAST HELPER
 function showToast(msg) {
     const toast = document.getElementById('toast');
     const toastMsg = document.getElementById('toastMsg');
@@ -1927,7 +1794,7 @@ function escapeHtml(str) {
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-// PENGATURAN FONT DAN TEMA WARNA DINAMIS
+// PENGATURAN FONT & TEMA WARNA
 function initFontAndColor() {
     changeFont(currentFont, false);
     changeAccentColor(currentAccentColor, false);
@@ -1949,7 +1816,7 @@ function changeFont(fontName, notify = true) {
     const activeClass = "flex-1 py-1 rounded-lg text-[10px] font-medium bg-white dark:bg-[#282838] text-theme-accent shadow transition";
     const inactiveClass = "flex-1 py-1 rounded-lg text-[10px] font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition";
 
-    if (btnSans) btnSans.className = fontName === 'sans' ? activeClass + " font-sans" : inactiveClass + " font-sans font-sans";
+    if (btnSans) btnSans.className = fontName === 'sans' ? activeClass + " font-sans" : inactiveClass + " font-sans";
     if (btnSerif) btnSerif.className = fontName === 'serif' ? activeClass + " font-serif" : inactiveClass + " font-serif";
     if (btnMono) btnMono.className = fontName === 'mono' ? activeClass + " font-mono" : inactiveClass + " font-mono";
 
@@ -1994,11 +1861,7 @@ function changeAccentColor(color, notify = true) {
     Object.keys(colorBtns).forEach(key => {
         const btn = colorBtns[key];
         if (btn) {
-            if (key === color) {
-                btn.innerHTML = `<i class="fa-solid fa-check text-white text-[10px]"></i>`;
-            } else {
-                btn.innerHTML = ``;
-            }
+            btn.innerHTML = key === color ? `<i class="fa-solid fa-check text-white text-[10px]"></i>` : ``;
         }
     });
 
@@ -2011,8 +1874,7 @@ function initTheme() {
     applyTheme(savedTheme);
 
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-        const currentTheme = localStorage.getItem('app_theme') || 'system';
-        if (currentTheme === 'system') {
+        if ((localStorage.getItem('app_theme') || 'system') === 'system') {
             applyTheme('system');
         }
     });
@@ -2041,11 +1903,8 @@ function applyTheme(theme) {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const isDark = theme === 'dark' || (theme === 'system' && prefersDark);
 
-    if (isDark) {
-        document.documentElement.classList.add('dark');
-    } else {
-        document.documentElement.classList.remove('dark');
-    }
+    if (isDark) document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
 
     updateThemeUI(theme);
 }
@@ -2072,13 +1931,9 @@ function updateThemeUI(theme) {
     const sunIcon = document.getElementById('themeSunIcon');
 
     if (iconElem) {
-        if (theme === 'system') {
-            iconElem.className = 'fa-solid fa-desktop text-sm';
-        } else if (theme === 'dark') {
-            iconElem.className = 'fa-solid fa-moon text-sm';
-        } else {
-            iconElem.className = 'fa-solid fa-sun text-sm';
-        }
+        if (theme === 'system') iconElem.className = 'fa-solid fa-desktop text-sm';
+        else if (theme === 'dark') iconElem.className = 'fa-solid fa-moon text-sm';
+        else iconElem.className = 'fa-solid fa-sun text-sm';
     }
 
     if (moonIcon && sunIcon) {

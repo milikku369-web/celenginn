@@ -75,7 +75,7 @@
                     <span class="text-white">Tambah Tabungan</span>
                 </button>
 
-                <!-- TOMBOL LENCANA / PIALA GAMIFIKASI DI SEBELAH TITIK TIGA -->
+                <!-- TOMBOL LENCANA / PIALA GAMIFIKASI -->
                 <button onclick="openModalBadges()" type="button" title="Pencapaian & Lencana" class="w-10 h-10 rounded-full flex items-center justify-center text-amber-500 hover:text-amber-600 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 transition active:scale-95 shadow-sm relative">
                     <i class="fa-solid fa-trophy text-base"></i>
                     <span id="badgeCountIndicator" class="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center border border-white dark:border-[#0d0d0f] hidden">0</span>
@@ -289,16 +289,13 @@
                         </div>
                     </div>
 
-                    <!-- KARTU FITUR BARU: GRAFIK TREN MENABUNG & INDIKATOR STATUS -->
+                    <!-- KARTU FITUR: GRAFIK TREN TABUNGAN (CLEAN TANPA BADGE) -->
                     <div class="bg-white dark:bg-[#181820] border border-gray-200 dark:border-gray-800/80 rounded-3xl p-6 shadow-xl space-y-4">
                         <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800/80 pb-3">
                             <div class="flex items-center gap-2">
                                 <i class="fa-solid fa-chart-line text-theme-accent"></i>
                                 <h3 class="text-sm font-bold text-gray-900 dark:text-white">Grafik Tren Tabungan</h3>
                             </div>
-                            
-                                <i class="fa-solid fa-circle-check text-[9px]"></i> On Track
-                            </span>
                         </div>
                         <div class="w-full h-48 relative">
                             <canvas id="savingsTrendChart"></canvas>
@@ -373,7 +370,7 @@
                     </div>
                 </div>
 
-                <!-- SIMULASI & TARGET FLEKSIBEL (DEADLINE & KALKULATOR) -->
+                <!-- SIMULASI & TARGET FLEKSIBEL -->
                 <div class="relative">
                     <label class="absolute -top-2 left-3 bg-white dark:bg-[#1c1c26] px-1 text-[10px] text-gray-500 dark:text-gray-400 font-medium z-10">Tenggat Waktu / Deadline (Opsional)</label>
                     <div class="flex items-center bg-gray-50 dark:bg-[#14141c] border border-gray-300 dark:border-gray-700 rounded-xl px-3.5 py-2.5 mt-1">
@@ -381,9 +378,7 @@
                         <input type="date" id="inputTargetDeadline" onchange="calculateSavingsTargetSimulation()" class="w-full bg-transparent text-gray-900 dark:text-white text-xs focus:outline-none dark:[color-scheme:dark]">
                     </div>
                 </div>
-                <div id="calcSimulationInfo" class="hidden text-[11px] text-theme-accent font-medium bg-theme-light p-3 rounded-xl border border-theme-accent/30 transition">
-                    <!-- Hasil Hitung Otomatis -->
-                </div>
+                <div id="calcSimulationInfo" class="hidden text-[11px] text-theme-accent font-medium bg-theme-light p-3 rounded-xl border border-theme-accent/30 transition"></div>
 
                 <div class="relative">
                     <label class="absolute -top-2 left-3 bg-white dark:bg-[#1c1c26] px-1 text-[10px] text-gray-500 dark:text-gray-400 font-medium z-10">Mata Uang</label>
@@ -642,7 +637,6 @@
                 </div>
             </form>
 
-            <!-- HAPUS AKUN PERMANEN (SOFT DELETE 24 JAM) -->
             <div class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700/60 text-left space-y-2">
                 <p class="text-[10px] font-bold text-rose-500 uppercase tracking-wider">Area Bahaya</p>
                 <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-snug">Menghapus akun akan menyembunyikan akunmu. Kamu memiliki waktu 24 jam untuk memulihkannya sebelum dihapus permanen.</p>

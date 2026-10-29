@@ -1022,7 +1022,7 @@ function renderHome() {
     }
 }
 
-// DETAIL PAGE RENDERING & PERBAIKAN GRAFIK TREN
+// DETAIL PAGE RENDERING & GRAFIK TREN (MURNI TANPA BADGE STATUS)
 function openDetailView(id) {
     currentDetailId = id;
     const item = savingsData.find(s => s.id === id);
@@ -1075,10 +1075,9 @@ function openDetailView(id) {
     }
 }
 
-// LOGIKA FIX: AKURASI GRAFIK TREN & STATUS ON TRACK
+// RENDERING CHART.JS MURNI HANYA MENAMPILKAN GRAFIK TREN
 function renderSavingsTrendChart(item) {
     const canvasElem = document.getElementById('savingsTrendChart');
-    const badgeElem = document.getElementById('trendStatusBadge');
     if (!canvasElem || typeof Chart === 'undefined') return;
 
     if (savingsChartInstance) {
@@ -1107,45 +1106,6 @@ function renderSavingsTrendChart(item) {
             labels.push(dateOnly);
             dataPoints.push(runningTotal);
         });
-    }
-
-    // ANALISIS STATUS ON TRACK / DI BAWAH TARGET (DENGAN REVISI HITUNGAN)
-    const terkumpul = calculateTerkumpul(item);
-    const target = item.targetAmount || 1;
-    const actualPercentage = (terkumpul / target) * 100;
-    let isOnTrack = false;
-
-    if (item.targetDeadline) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const deadlineDate = new Date(item.targetDeadline);
-        deadlineDate.setHours(0, 0, 0, 0);
-
-        const createdDate = item.createdDate ? new Date(item.createdDate) : new Date(today);
-        createdDate.setHours(0, 0, 0, 0);
-
-        const totalDuration = Math.max(1, (deadlineDate - createdDate) / (1000 * 60 * 60 * 24));
-        const elapsedDuration = Math.max(1, (today - createdDate) / (1000 * 60 * 60 * 24));
-        const expectedPercentage = Math.min(100, (elapsedDuration / totalDuration) * 100);
-
-        if (elapsedDuration <= 1) {
-            isOnTrack = actualPercentage > 0;
-        } else {
-            isOnTrack = actualPercentage >= expectedPercentage;
-        }
-    } else {
-        isOnTrack = actualPercentage > 0;
-    }
-
-    if (badgeElem) {
-        if (isOnTrack) {
-            badgeElem.className = "text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 flex items-center gap-1";
-            badgeElem.innerHTML = `<i class="fa-solid fa-circle-check text-[9px]"></i> On Track`;
-        } else {
-            badgeElem.className = "text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-rose-500/15 text-rose-500 border border-rose-500/30 flex items-center gap-1";
-            badgeElem.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-[9px]"></i> Di Bawah Target`;
-        }
     }
 
     const ctx = canvasElem.getContext('2d');
